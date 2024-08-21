@@ -8,10 +8,13 @@ from rest_framework.exceptions import AuthenticationFailed
 
 import jwt
 import datetime
-
+from .models import User
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 # Create your views here.
 
 class registerAPIView(APIView):
+    @swagger_auto_schema(request_body=UserSerializer)
     def post(self, request):
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)   #if anything not valid, raise exception
@@ -20,6 +23,19 @@ class registerAPIView(APIView):
 
 
 class LoginAPIView(APIView):
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email'),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description='Mot de passe'),
+            }
+        ),
+        responses={
+            200: openapi.Response('Connexion réussie'),
+            400: openapi.Response('User not found or Invalid password'),
+        }
+    )
     def post(self, request):
         email = request.data['email']
         password = request.data['password']
@@ -62,6 +78,12 @@ class LoginAPIView(APIView):
 
 # get user using cookie
 class UserView(APIView):
+    @swagger_auto_schema(
+        responses={
+            200: UserSerializer(),
+            401: openapi.Response('Unauthorized'),
+        }
+    )
     def get(self, request):
         token = request.COOKIES.get('jwt')
 
@@ -82,6 +104,7 @@ class UserView(APIView):
         #cookies accessed if preserved
 
 class LogoutView(APIView):
+    @swagger_auto_schema(responses={200: 'Déconnexion réussie'})
     def post(self, request):
         response = Response()
         response.delete_cookie('jwt')
